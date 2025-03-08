@@ -1,0 +1,56 @@
+import pandas as pd
+import numpy as np
+from IPython.display import display
+import os
+
+# Define file path
+file_path = "springer2.xlsx"  # Ensure it's in the correct location
+
+# Load the Excel file
+sheet_name = "Tom Processing"  # The sheet containing the data
+df = pd.read_excel(file_path, sheet_name=sheet_name)
+
+# Print available column names
+print("Available Columns:", df.columns.tolist())
+
+# Convert "Working/ Not wrking" (0 or 1) to actual working minutes per segment
+df["Working Minutes"] = df["Working_status "] * 15  # Since each segment is 15 minutes
+
+# Calculate the mean and standard deviation
+mean_working_minutes = df["Working Minutes"].mean()
+std_dev_working_minutes = df["Working Minutes"].std()
+
+# Add calculated values
+df["Mean Working Minutes"] = mean_working_minutes  # Same for all rows
+df["Standard Deviation"] = np.sqrt((df["Working Minutes"] - mean_working_minutes) ** 2)
+
+df['Day'] = df['Day'].ffill()  # New method (no warning)
+
+# Define lower and upper threshold for outliers
+lower_bound = mean_working_minutes - (2 * std_dev_working_minutes)
+upper_bound = mean_working_minutes + (2 * std_dev_working_minutes)
+
+# Create the "Outliers Y/N" column based on the condition
+df["Outliers Y/N"] = df["Working Minutes"].apply(
+    lambda x: "N" if lower_bound <= x <= upper_bound else "Y"
+)
+
+
+
+# Drop the unnecessary columns when displaying
+display(df.drop(columns=["Mean Working Minutes", "Working Minutes"]))
+
+# Save the updated data back to Excel
+df.to_excel(file_path, sheet_name=sheet_name, index=False, engine="openpyxl")
+
+# Display results in Python
+print(f"Mean Working Minutes per Segment: {mean_working_minutes:.2f}")
+print(f"Standard Deviation of Working Minutes: {std_dev_working_minutes:.2f}")
+
+# Confirm completion
+print("✅ Data updated in Excel with Mean & Standard Deviation!")
+
+print("Last modified time:", os.path.getmtime("springer2.xlsx"))
+
+from google.colab import files
+files.download("springer2.xlsx")
